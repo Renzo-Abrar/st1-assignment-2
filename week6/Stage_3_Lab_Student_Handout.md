@@ -28,7 +28,7 @@
 |:------------------|:--------------------------|:-------------------------------------------------------------------|:---------------------------------------------|
 | **Patient**       | FR-01                     | `patient_id`, `name`, `contact_info`                               | `validate()`                                 |
 | **Practitioner**  | FR-02                     | `practitioner_id`, `name`, `specialty`                             | `validate()`                                 |
-| **Appointment**   | FR-04, FR-05, FR-06       | `appointment_id`, `patient`, `practitioner`, `date_time`, `status` | `schedule()`, `cancel()`, `check_conflict()` |
+| **Appointment**   | FR-04, FR-05, FR-06       | `appointment_id`, `patient.py`, `practitioner.py`, `date_time`, `status` | `schedule()`, `cancel()`, `check_conflict()` |
 | **Clinic**        | N/A (Architecture)        | `clinic_name`                                                      | N/A                                          |
 | **Database**      | N/A (Infrastructure)      | N/A                                                                | N/A                                          |
 
