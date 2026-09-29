@@ -1,0 +1,53 @@
+# SmartCare v0.4 - Domain Implementation Workbook
+
+## 1. UML-to-Code Trace
+
+| UML element                    | Python element                                      | Implemented? | Notes                                                                                       |
+|:-------------------------------|:----------------------------------------------------|:-------------|:--------------------------------------------------------------------------------------------|
+| `AppointmentStatus` (Enum)     | `class AppointmentStatus(Enum)`                     | Yes          | Implemented using `auto()` for `SCHEDULED`, `CANCELLED`, `COMPLETED`.                       |
+| `InvalidStatusTransitionError` | `class InvalidStatusTransitionError(Exception)`     | Yes          | Custom domain exception raised on illegal status transitions.                               |
+| `Appointment` (Class)          | `class Appointment`                                 | Yes          | Encapsulates appointment attributes, properties, and transition operations.                 |
+| `appointment_id: String`       | `self._appointment_id` / `@property appointment_id` | Yes          | Validated string attribute with leading/trailing whitespace stripped.                       |
+| `patient: Patient`             | `self._patient` / `@property patient`               | Yes          | Domain reference to `Patient` object.                                                       |
+| `practitioner: Practitioner`   | `self._practitioner` / `@property practitioner`     | Yes          | Domain reference to `Practitioner` object.                                                  |
+| `date_time: DateTime`          | `self._date_time` / `@property date_time`           | Yes          | Python `datetime` object representing appointment timestamp.                                |
+| `status: AppointmentStatus`    | `self._status` / `@property status`                 | Yes          | Encapsulated enum attribute tracking current state.                                         |
+| `schedule(): Boolean`          | `def schedule(self) -> bool:`                       | Yes          | Enforces `SCHEDULED` status invariant.                                                      |
+| `cancel(): Boolean`            | `def cancel(self) -> bool:`                         | Yes          | Validates origin status, transitions state to `CANCELLED`, retains object in memory.        |
+| `complete(): Boolean`          | `def complete(self) -> bool:`                       | Yes          | Validates origin status and transitions state to `COMPLETED`.                               |
+| `validate(): Boolean`          | `def validate(self) -> bool:`                       | Yes          | Checks required fields and delegates validation to referenced patient/practitioner objects. |
+
+
+## 2. Domain Invariants
+
+| Class         | Invariant / Rule                                                                                                                                                        | How Protected                                                                                                                                      |
+|:--------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Appointment` | Status state transitions must be strictly enforced (`SCHEDULED` $\rightarrow$ `CANCELLED` or `COMPLETED`). Direct jumps from `CANCELLED` or `COMPLETED` are prohibited. | Guarded by `_ensure_scheduled()` helper method which validates `_status == AppointmentStatus.SCHEDULED` and raises `InvalidStatusTransitionError`. |
+| `Appointment` | Primary identifier (`appointment_id`) cannot be empty or consist solely of whitespace.                                                                                  | Sanitized via `.strip()` in `__init__` and validated inside `validate()`.                                                                          |
+| `Appointment` | An appointment must maintain valid, non-null references to both a `Patient` and a `Practitioner`.                                                                       | Validated within `validate()` by explicitly checking presence and invoking `_patient.validate()` and `_practitioner.validate()`.                   |
+| `Appointment` | Internal attributes must be protected against direct external mutation to preserve encapsulation.                                                                       | Attributes use leading underscores (`_status`, `_appointment_id`) and are exposed strictly through read-only `@property` getters.                  |
+| `Appointment` | Cancelled appointments must be retained in memory for historical audit logs rather than destroyed or deleted.                                                           | `cancel()` modifies the `_status` attribute to `AppointmentStatus.CANCELLED` while maintaining the instance and referenced domain objects intact.  |
+
+
+## 3. Composition / Inheritance Decisions
+
+| Relationship                                                                | Decision                               | Rationale                                                                                                                                                                                                |
+|:----------------------------------------------------------------------------|:---------------------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **`Appointment` $\rightarrow$ `Patient` (Association / Reference)**         | **Association (1 to 1)**               | An appointment relates a patient to a practitioner. `Appointment` stores a reference to a `Patient` object rather than inheriting from it, as an appointment "has a" patient rather than "is a" patient. |
+| **`Appointment` $\rightarrow$ `Practitioner` (Association / Reference)**    | **Association (1 to 1)**               | An appointment holds a reference to a `Practitioner` object to track provider availability and assignment without tight coupling or inheritance.                                                         |
+| **`Appointment` $\rightarrow$ `AppointmentStatus` (Composition / Enum)**    | **Composition (1 to 1)**               | `AppointmentStatus` is an enumeration tightly bound to the `Appointment` lifecycle state, strictly controlling permitted state values (`SCHEDULED`, `CANCELLED`, `COMPLETED`).                           |
+| **`Appointment` Inheritance**                                               | **No Inheritance (Flat Domain Model)** | `Appointment` does not inherit from base classes (or `Patient`/`Practitioner`). Inheritance is avoided here to prevent invalid domain models and premature hierarchy abstraction.                        |
+| **Manager / Controller Classes (`AppointmentManager`, `ClinicController`)** | **Rejected (Excluded from Model)**     | Avoided introducing application-layer managers or controllers within the core domain model to prevent procedural wrappers and God Class anti-patterns.                                                   |
+
+## 4. AI Pair-Programming Record
+
+| AI contribution                                                                                                                                           | Conforms? | Decision   | Reason                                                                                                           | Verification                                                                                                                 |
+|:----------------------------------------------------------------------------------------------------------------------------------------------------------|:----------|:-----------|:-----------------------------------------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------------------------------------------------|
+| **Class Skeleton Generation:** Generated initial `Appointment` class structure, constructor, and `@property` getters based on Week 6 UML specifications.  | Yes       | **Accept** | Reduced boilerplate syntax errors and accelerated transition from UML design to Python domain code.              | Verified attribute names and types (`str`, `datetime`, `Patient`, `Practitioner`) matched domain requirements.               |
+| **Status Transition Logic:** Suggested direct string manipulation for `status` (e.g., `status = "CANCELLED"`).                                            | No        | **Modify** | Using raw strings bypasses type safety and increases risk of invalid state assignment errors.                    | Replaced string attributes with explicit `AppointmentStatus` Enum and auto-generated values (`auto()`).                      |
+| **Exception Handling:** Proposed generic `Exception` or `ValueError` for illegal appointment status transitions.                                          | Partial   | **Modify** | Generic exceptions fail to express specific domain rules and make targeted error handling difficult for callers. | Created a dedicated custom domain exception (`InvalidStatusTransitionError`).                                                |
+| **Duplicated Check Refactoring:** Suggested extracting repeated status validation checks across `schedule()`, `cancel()`, and `complete()` into a helper. | Yes       | **Accept** | Improved DRY compliance and centralized status guard assertions without altering public API or invariants.       | Tested transition edge cases (e.g., repeated cancellations) to ensure `InvalidStatusTransitionError` is consistently raised. |
+
+## 5. Updated UML
+
+No design changes were made to the core domain model during Stage 4 implementation. The implementation strictly adheres to the approved Stage 3 UML class structure (`Patient`, `Practitioner`, `Appointment`, and `AppointmentStatus`). All encapsulation boundaries, attributes, and state transition rules were maintained without introducing unwarranted application-layer classes or structural changes.
