@@ -45,6 +45,7 @@
 ### Before Refactoring (Unfactored Duplicate Logic)
 Prior to refactoring, transition checks were duplicated across `schedule()`, `cancel()`, and `complete()` methods using redundant conditional checks:
 
+
 ```python
 # Before: Duplicated check logic in appointment.py
 def cancel(self) -> bool:
@@ -65,3 +66,26 @@ def cancel(self) -> bool:
     self._status = AppointmentStatus.CANCELLED
     return True
 
+```
+
+## H - AI Engineering Log & Reflection
+
+### AI Assistance Log
+
+| Step / Prompt                     | AI Tool & Prompt Used                                                                                                                                                         | Response Evaluation & Action Taken                                                                                                                                                                     |
+|:----------------------------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Stage 4 Domain Implementation** | **GitHub Copilot**: *"Implement the Appointment class based on the Stage 3 UML model. Include attributes, properties, status transitions, and exception handling."* | **Evaluated & Accepted**: Generated clean dataclass/class structure with `AppointmentStatus` Enum and transition methods. Excluded database and UI bloat to maintain strict domain boundary alignment. |
+| **Refactoring Status Logic**      | **GitHub Copilot**: *"Refactor status validation logic across schedule(), cancel(), and complete() to avoid duplicated checks."*                                    | **Evaluated & Accepted**: Extracted repeated condition checks into a private `_ensure_scheduled()` helper method, improving DRY compliance without altering domain behaviour.                          |
+
+---
+
+### Reflection Questions
+
+#### 1. How did AI assist in moving from the UML model to Python domain code?
+AI transitioned from design to code by generating the inital Python class structure, dataclasses, properties and enum templated matching the UML specs that was approved. It made sure that the names and annotations were aligned directly with the domain model.
+
+#### 2. What domain rules or edge cases did the AI miss that required manual intervention?
+The AI initially allowed external callers to state variables directly without state transition checks and failed to guard illegal transitions. Manual logic was needed to summarise attributes being `@property` getters and introduce `InvalidStatusTransitionErrors` to protect the domain invariants.
+
+#### 3. How did refactoring improve code quality while preserving domain invariants?
+Refactoring duplicated status validation logic across multiple methods into a single main central helper method. This elimanted code duplication, imrpoved maintainability, and ensured all transitions enforced the rule that operations need to originate from a `SCHEDULED` status.
