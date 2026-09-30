@@ -133,4 +133,4 @@ Transitioning SmartCare from a monolithic script into a 5-layer architecture (`d
 
 ### 3. AI Copilot Review & Over-Engineering Evaluation
 * **Assistance:** Copilot effectively generated repository interface templates and standard boilerplate code for system bootstrapping.
-* **Over-Engineering Risks:** Copilot attempted to insert raw SQL queries and persistence calls directly into `AppointmentService`. This was rejected during the architecture review to prevent coupling application workflows directly to specific storage mechanisms.
+* **Over-Engineering Risks:** Copilot attempted to insert raw SQL queries and persistence calls directly into `AppointmentService`. This was rejected during the architecture review to prevent coupling application workflows directly to specific storage mechanisms.![Propose Architecture.png](../../../Desktop/Propose%20Architecture.png)
